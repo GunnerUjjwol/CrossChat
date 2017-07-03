@@ -62,7 +62,7 @@ public class MessageHandlerForDisplay extends BaseAdapter {
         }
         else{
             layoutBubbleChild.setBackgroundResource(R.drawable.bubble1);
-            layoutParent.setGravity(Gravity.RIGHT);
+            layoutParent.setGravity(Gravity.LEFT);
         }
         messageHolder.setTextColor(Color.BLACK);
         return view;

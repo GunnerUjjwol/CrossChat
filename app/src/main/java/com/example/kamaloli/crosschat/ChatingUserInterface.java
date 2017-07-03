@@ -1,5 +1,9 @@
 package com.example.kamaloli.crosschat;
+import android.app.ActionBar;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -12,15 +16,12 @@ import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.crashlytics.android.Crashlytics;
+import com.example.kamaloli.crosschat.Authentication.SingletonDesignPatternForAbstractXmpp;
 import com.example.kamaloli.crosschat.communication.MessageHandlerForDisplay;
 import com.example.kamaloli.crosschat.communication.MessageStructure;
 import com.example.kamaloli.crosschat.communication.UserInformationController;
-
-import io.fabric.sdk.android.Fabric;
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
-import org.jivesoftware.smack.MessageListener;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
 import org.jivesoftware.smack.chat.Chat;
@@ -34,32 +35,43 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
 import java.io.IOException;
 import java.util.ArrayList;
 import android.os.Handler;
-
-public class MainActivity extends AppCompatActivity implements ChatMessageListener, ChatManagerListener,View.OnClickListener{
-    final String hostName="54.92.252.141";
+public class ChatingUserInterface extends AppCompatActivity implements ChatMessageListener,View.OnClickListener{
+    final String hostName="54.209.36.83";
     final String serviceName="ip-172-31-21-141.ec2.internal";
     public UserInformationController user;
     final String resourceName="Smack";
     final int port=5222;
     Chat chatting=null;
     ImageButton sendMessageButton;
+    SharedPreferences preferences;
     EditText inputMessage;
     AbstractXMPPConnection userConnection=null;
     XMPPTCPConnectionConfiguration.Builder connection;
     ListView messageListView;
     ArrayList<MessageStructure> messageList;
     MessageHandlerForDisplay messageHandlerForDisplay;
+    SingletonDesignPatternForAbstractXmpp singletonObject;
+    ProgressDialog progressDialog;
+    String userName,password,rUsername,rPassword;
+    Bundle bundle;
     Handler handler;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Fabric.with(this, new Crashlytics());
         setContentView(R.layout.activity_main);
         variableInitialization();
     }
     private void variableInitialization() {
+        singletonObject=SingletonDesignPatternForAbstractXmpp.getInstance();
+        userName=singletonObject.username;
+        password=singletonObject.password;
+        progressDialog=new ProgressDialog(ChatingUserInterface.this);
+        android.support.v7.app.ActionBar bar=getSupportActionBar();
+       // bar.setSubtitle(singletonObject.fullName);
+        bar.setTitle(singletonObject.rUsername);
         user=new UserInformationController();
-        user.setRemotelyChatingUserInfo("kamaloli974@ip-172-31-21-141.ec2.internal","KAMAL OLI","kamaloli974@gmail.com");
+        user.setRemotelyChatingUserInfo(singletonObject.rUsername+"@ip-172-31-21-141.ec2.internal",singletonObject.rUsersName
+                ,singletonObject.rUserEmail);
         messageListView=(ListView)findViewById(R.id.message_list_view);
         messageList=new ArrayList<MessageStructure>();
         messageHandlerForDisplay=new MessageHandlerForDisplay(getApplicationContext(),messageList);
@@ -70,29 +82,14 @@ public class MainActivity extends AppCompatActivity implements ChatMessageListen
         handler=new Handler();
         //Initialization of server and user connection for the first time
         BackGroundServerConnection backgroundServerConnection=new BackGroundServerConnection();
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setMessage("Please wait..making things ready for you");
+        progressDialog.show();
         backgroundServerConnection.execute(userConnection);
         logMessageHandler("Hello","hi");
         defaultToastMessageHandler(getApplicationContext(),"Hello this is mainActivity");
     }
-    @Override
-    protected void onStart() {
-//        BackgroundServerConnectionForChating newTask=new BackgroundServerConnectionForChating();
-//        newTask.execute(userConnection);
-        super.onStart();
-    }
-    @Override
-    protected void onResume() {
-        super.onResume();
-    }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-    }
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -120,26 +117,17 @@ public class MainActivity extends AppCompatActivity implements ChatMessageListen
     }
     @Override
     public void processMessage(Chat chat, Message message) {
+        chatting=chat;
         final String messageD=message.getBody();
         if(messageD!=null){
-
             handler.post(new Runnable() {
                 @Override
                 public void run() {
                     receiveMessage(messageD,false);
                 }
             });
-
         }
     }
-    @Override
-    public void chatCreated(Chat chat, boolean createdLocally) {
-        if(!createdLocally){
-            chat.addMessageListener(MainActivity.this);
-        }
-        chatting=chat;
-    }
-
     @Override
     public void onClick(View v) {
         switch (v.getId()){
@@ -150,17 +138,14 @@ public class MainActivity extends AppCompatActivity implements ChatMessageListen
                 }
         }
     }
-
     class BackGroundServerConnection extends AsyncTask<AbstractXMPPConnection,Void,AbstractXMPPConnection>{
-
         @Override
         protected AbstractXMPPConnection doInBackground(AbstractXMPPConnection... params) {
-
             AbstractXMPPConnection serverConnection=params[0];
             if(serverConnection==null){
                 connection=XMPPTCPConnectionConfiguration.builder();
                 connection.setHost(hostName);
-                connection.setUsernameAndPassword("kamaloli752","kamaloli752");
+                connection.setUsernameAndPassword(userName,password);
                 connection.setPort(port);
                 connection.setServiceName(serviceName);
                 connection.setResource(resourceName);
@@ -170,6 +155,13 @@ public class MainActivity extends AppCompatActivity implements ChatMessageListen
                 try {
                     serverConnection.connect();
                     serverConnection.login();
+                    ChatManager manager=ChatManager.getInstanceFor(serverConnection);
+                    manager.addChatListener(new ChatManagerListener() {
+                        @Override
+                        public void chatCreated(Chat chat, boolean createdLocally) {
+                            chat.addMessageListener(new ChatMessageListenerForIncommingMessages());
+                        }
+                    });
                 } catch (SmackException e) {
                     logMessageHandler("SmackException",e+"");
                 } catch (IOException e) {
@@ -182,16 +174,16 @@ public class MainActivity extends AppCompatActivity implements ChatMessageListen
 
             return serverConnection;
         }
-
         @Override
         protected void onPostExecute(AbstractXMPPConnection abstractXMPPConnection) {
             if(abstractXMPPConnection.isAuthenticated()){
                 logMessageHandler("The user ",abstractXMPPConnection.getUser()+" is authenticated");
                 userConnection=abstractXMPPConnection;
                 user.setServerConnection(userConnection);
-                defaultToastMessageHandler(MainActivity.this,"Connection Established successfully"+abstractXMPPConnection);
+                defaultToastMessageHandler(ChatingUserInterface.this,"Connection Established successfully"+abstractXMPPConnection);
                 BackgroundServerConnectionForChatting c=new BackgroundServerConnectionForChatting();
                 c.execute(userConnection);
+                progressDialog.hide();
                 defaultToastMessageHandler(getApplication(),"MessageListener is initialized");
             }
             else{
@@ -212,24 +204,31 @@ public class MainActivity extends AppCompatActivity implements ChatMessageListen
     class BackgroundServerConnectionForChatting extends AsyncTask<AbstractXMPPConnection,Void,Chat> {
         @Override
         protected Chat doInBackground(AbstractXMPPConnection... params) {
-            AbstractXMPPConnection connection = params[0];
-            ChatManager manager = ChatManager.getInstanceFor(connection);
-            Chat chattingObject = manager.createChat(user.getRemotelyChatingUserName());
-            manager.addChatListener(MainActivity.this);
+            Chat chattingObject=null;
+            if(chatting==null){
+                AbstractXMPPConnection connection = params[0];
+                ChatManager manager = ChatManager.getInstanceFor(connection);
+                chattingObject = manager.createChat(user.getRemotelyChatingUserName());
+                //manager.addChatListener();
+            }
+
             return chattingObject;
         }
 
         @Override
         protected void onPostExecute(Chat chat) {
             chatting=chat;
+
         }
     }
+
     public void sendingMessage(String message,boolean flag){
         MessageStructure object=new MessageStructure(message,flag);
         try {
             chatting.sendMessage(message);
             messageList.add(object);
             messageHandlerForDisplay.notifyDataSetChanged();
+            messageListView.setStackFromBottom(true);
             inputMessage.setText("");
         } catch (SmackException.NotConnectedException e) {
            logMessageHandler("SmackException",e.getMessage());
@@ -239,7 +238,39 @@ public class MainActivity extends AppCompatActivity implements ChatMessageListen
         MessageStructure object=new MessageStructure(message,flag);
         messageList.add(object);
         messageHandlerForDisplay.notifyDataSetChanged();
+        messageListView.setStackFromBottom(true);
         inputMessage.setText("");
+    }
 
+    @Override
+    public void onBackPressed() {
+        Intent intent=new Intent(this,HomeActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        singletonObject.rUsersName=null;
+        singletonObject.rUsername=null;
+        singletonObject.rUserEmail=null;
+    }
+    public class ChatMessageListenerForIncommingMessages implements ChatMessageListener{
+        @Override
+        public void processMessage(Chat chat, Message message) {
+            chatting=chat;
+            final String messageD=message.getBody();
+            if(messageD!=null){
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        receiveMessage(messageD,false);
+                    }
+                });
+
+            }
+        }
     }
 }

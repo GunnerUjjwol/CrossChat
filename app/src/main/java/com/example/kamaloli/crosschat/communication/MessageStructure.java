@@ -1,5 +1,7 @@
 package com.example.kamaloli.crosschat.communication;
 
+import org.jivesoftware.smack.chat.Chat;
+
 import java.util.Random;
 
 /**
@@ -11,13 +13,19 @@ public class MessageStructure {
     public String myName;
     public String date,time;
     public String message;
+    public String sMessage;
     public String messageId;
-    boolean didIComposeIt;
+    public boolean didIComposeIt;
+    Chat chat;
     public MessageStructure(String senderName,String receiverName,String message,String messageId,boolean didIComposeIt){
         this.senderName=senderName;
         this.myName=receiverName;
         this.message=message;
         this.messageId=getMessageId(messageId);
+        this.didIComposeIt=didIComposeIt;
+    }
+    public MessageStructure(String message,boolean didIComposeIt){
+        this.message=message;
         this.didIComposeIt=didIComposeIt;
     }
     public String getMessageId(String messageId){

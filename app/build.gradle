@@ -1,3 +1,10 @@
+buildscript {
+    repositories {
+    }
+
+    dependencies {
+    }
+}
 apply plugin: 'com.android.application'
 
 android {
@@ -11,6 +18,8 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
+        aaptOptions.cruncherEnabled = false
+        aaptOptions.useNewCruncher = false
     }
     buildTypes {
         release {
@@ -25,11 +34,15 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.1.0'
-    compile 'com.android.support:design:25.1.0'
+
+    compile 'com.android.support:appcompat-v7:25.1.1'
+    compile 'com.android.support:design:25.1.1'
     compile 'org.igniterealtime.smack:smack-android:4.1.0'
     compile 'org.igniterealtime.smack:smack-tcp:4.1.0'
     compile 'org.igniterealtime.smack:smack-android-extensions:4.1.0'
-    testCompile 'junit:junit:4.12'
-
+    compile 'com.google.android.gms:play-services:10.0.1'
+    compile 'com.android.support:support-v4:25.1.1'
+    compile 'com.lapism:searchview:4.0'
+    compile 'com.github.arimorty:floatingsearchview:2.0.3'
+    testCompile 'org.testng:testng:6.9.6'
 }

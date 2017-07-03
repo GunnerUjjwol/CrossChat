@@ -1,35 +1,45 @@
 package com.example.kamaloli.crosschat.communication;
 
-/**
- * Created by KAMAL OLI on 12/02/2017.
- */
+    import org.jivesoftware.smack.AbstractXMPPConnection;
 
-public class UserInformationController {
-    //r=remotelyChatingUser
-    String userName,rUserName;
-    String usersName,rUsersName;
-    String password;
-    String email,rEmail;
-    String mobileNumber;
-    boolean currentStatus,rCurrentStatus;
-    public UserInformationController(String userName,String password,String email){
-        this.userName=userName;
-        this.password=password;
-        this.email=email;
-    }
-    private void setRemotelyChatingUserInfo(String userName,String name,String email){
-        rUserName=userName;
-        rUsersName=name;
-        rEmail=email;
+    /**
+     * Created by KAMAL OLI on 12/02/2017.
+     */
 
-    }
-    private String getRemotelyChatingUserName(){
+    public class UserInformationController {
+        //r=remotelyChatingUser
+        String userName,rUserName;
+        String usersName,rUsersName;
+        String password;
+        String email,rEmail;
+        String mobileNumber;
+        boolean currentStatus,rCurrentStatus;
+        AbstractXMPPConnection serverConnection=null;
+        public UserInformationController(){}
+        public UserInformationController(String userName,String password,String email){
+            this.userName=userName;
+            this.password=password;
+            this.email=email;
+        }
+        public void setRemotelyChatingUserInfo(String userName,String name,String email){
+            rUserName=userName;
+            rUsersName=name;
+            rEmail=email;
+        }
+    public String getRemotelyChatingUserName(){
         return rUserName;
     }
-    private String getRemotelyChatingUsersname(){
+    public String getRemotelyChatingUsersname(){
         return rUsersName;
     }
-    private String getRemotelyChatingUsersEmail(){
+    public String getRemotelyChatingUsersEmail(){
         return rEmail;
+    }
+
+    public void setServerConnection(AbstractXMPPConnection serverConnection) {
+        this.serverConnection = serverConnection;
+    }
+   public AbstractXMPPConnection getServerConnection(){
+        return serverConnection;
     }
 }
